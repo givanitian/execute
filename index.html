@@ -1,132 +1,143 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Redeem Code Redfinger Generator</title>
-    <style>
-        body {
-            font-family: 'Arial', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: #fff;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            text-align: center;
-        }
-        .container {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 15px;
-            padding: 40px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-            max-width: 400px;
-            width: 100%;
-        }
-        h1 {
-            margin-bottom: 20px;
-            font-size: 2em;
-        }
-        .code-display {
-            font-size: 1.5em;
-            font-weight: bold;
-            background: rgba(255, 255, 255, 0.2);
-            padding: 15px;
-            border-radius: 10px;
-            margin: 20px 0;
-            word-break: break-all;
-            min-height: 50px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        button {
-            background: #4CAF50;
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            font-size: 1em;
-            border-radius: 8px;
-            cursor: pointer;
-            margin: 10px;
-            transition: background 0.3s;
-        }
-        button:hover {
-            background: #45a049;
-        }
-        .copy-btn {
-            background: #2196F3;
-        }
-        .copy-btn:hover {
-            background: #0b7dda;
-        }
-        .notification {
-            margin-top: 20px;
-            font-size: 0.9em;
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-        .notification.show {
-            opacity: 1;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kode Redeem Manager</title>
+<style>
+body { font-family: Arial; background: #f5f5f5; display: flex; justify-content: center; padding: 50px 20px;}
+.container { background: #fff; padding: 25px; border-radius: 10px; width: 100%; max-width: 650px; box-shadow: 0 5px 15px rgba(0,0,0,0.1);}
+select, textarea, input, button { padding: 10px; width: 100%; margin: 5px 0; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box; font-size: 14px;}
+textarea { height: 100px; resize: vertical;}
+button { cursor: pointer; background: #4CAF50; color: white; border: none;}
+button:hover { background: #45a049;}
+#stock, #codeList, #output { margin-top: 15px; padding: 15px; background: #eee; border-radius: 5px; white-space: pre-line; min-height: 50px;}
+.codeItem { padding: 8px; background: #d9f9d9; margin-bottom: 5px; border-radius: 5px;}
+</style>
 </head>
 <body>
-    <div class="container">
-        <h1>Redeem Code Redfinger Generator</h1>
-        <div class="code-display" id="codeDisplay">Click Generate to create a code</div>
-        <button onclick="generateCode()">Generate Code</button>
-        <button class="copy-btn" onclick="copyCode()">Copy Code</button>
-        <div class="notification" id="notification"></div>
-    </div>
+<div class="container">
+<h2>Kode Redeem Manager</h2>
+<select id="typeSelect">
+<option value="7D">7 Day</option>
+<option value="30D">30 Day</option>
+</select>
+<textarea id="codeInput" placeholder="Masukkan kode redeem, satu kode per baris"></textarea>
+<input type="number" id="quantityInput" placeholder="Quantity saat tambah kode" value="1" min="1">
+<button onclick="addCode()">Tambah Kode</button>
 
-    <script>
-        function generateCode() {
-            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-            let code = '';
-            for (let i = 0; i < 4; i++) {
-                code += chars.charAt(Math.floor(Math.random() * chars.length));
-            }
-            code += '-';
-            for (let i = 0; i < 4; i++) {
-                code += chars.charAt(Math.floor(Math.random() * chars.length));
-            }
-            code += '-';
-            for (let i = 0; i < 4; i++) {
-                code += chars.charAt(Math.floor(Math.random() * chars.length));
-            }
-            document.getElementById('codeDisplay').textContent = code;
-            hideNotification();
-        }
+<h3>Ambil Kode:</h3>
+<input type="number" id="redeemQty" placeholder="Berapa kode yang ingin diambil?" value="1" min="1">
+<button onclick="redeemMultiple()">Ambil Kode</button>
 
-        function copyCode() {
-            const code = document.getElementById('codeDisplay').textContent;
-            if (code === 'Click Generate to create a code') {
-                showNotification('No code to copy! Generate one first.');
-                return;
+<h3>Stok Kode Redeem:</h3>
+<div id="stock"></div>
+
+<h3>Daftar Kode Redeem:</h3>
+<div id="codeList"></div>
+
+<h3>Output:</h3>
+<div id="output"></div>
+</div>
+
+<script>
+let codes = JSON.parse(localStorage.getItem('codes')) || [];
+const stockDiv = document.getElementById('stock');
+const codeListDiv = document.getElementById('codeList');
+const outputDiv = document.getElementById('output');
+
+function updateStock() {
+    let stock7D = codes.filter(c => c.type === '7D').reduce((acc, c) => acc + c.quantity, 0);
+    let stock30D = codes.filter(c => c.type === '30D').reduce((acc, c) => acc + c.quantity, 0);
+    stockDiv.textContent = `7 Day Stock: ${stock7D} | 30 Day Stock: ${stock30D}`;
+}
+
+function displayCodes() {
+    updateStock();
+    codeListDiv.innerHTML = '';
+    codes.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'codeItem';
+        div.textContent = `${item.type}: ${item.code} (Quantity: ${item.quantity})`;
+        codeListDiv.appendChild(div);
+    });
+}
+
+function addCode() {
+    const type = document.getElementById('typeSelect').value;
+    const input = document.getElementById('codeInput').value.trim();
+    const quantity = parseInt(document.getElementById('quantityInput').value) || 1;
+    if(input){
+        const lines = input.split(/\r?\n/);
+        lines.forEach(line => {
+            const code = line.trim();
+            if(code){
+                const existing = codes.find(c => c.code === code && c.type === type);
+                if(existing){
+                    existing.quantity += quantity;
+                } else {
+                    codes.push({type: type, code: code, quantity: quantity});
+                }
             }
-            navigator.clipboard.writeText(code).then(() => {
-                showNotification('Code copied to clipboard!');
-            }).catch(err => {
-                showNotification('Failed to copy code.');
-            });
-        }
+        });
+        localStorage.setItem('codes', JSON.stringify(codes));
+        document.getElementById('codeInput').value = '';
+        document.getElementById('quantityInput').value = '1';
+        displayCodes();
+    }
+}
 
-        function showNotification(message) {
-            const notification = document.getElementById('notification');
-            notification.textContent = message;
-            notification.classList.add('show');
-            setTimeout(() => {
-                notification.classList.remove('show');
-            }, 3000);
-        }
+function redeemMultiple(){
+    let takeQty = parseInt(document.getElementById('redeemQty').value) || 1;
+    let flatCodes = [];
+    codes.forEach(c => { for(let i=0;i<c.quantity;i++){ flatCodes.push({...c}); }});
+    if(takeQty > flatCodes.length){
+        alert(`Jumlah yang diminta lebih besar dari stok! Stok tersedia: ${flatCodes.length}`);
+        return;
+    }
 
-        function hideNotification() {
-            document.getElementById('notification').classList.remove('show');
+    let takenCodes = flatCodes.slice(0, takeQty);
+    let firstType = takenCodes[0].type;
+    let unitPrice = firstType === '7D' ? 21000 : 61000;
+    let totalPrice = (unitPrice * takeQty).toLocaleString('id');
+    let duration = firstType === '7D' ? '7 days 🚀' : '30 days 🚀';
+
+    let codeLines = takenCodes.map(c=>c.code).join('\n      ');
+
+    outputDiv.textContent = `🎁 Your Order Has Been Processed!
+Product: VIP - Redeem Code ${firstType} (Redfinger)
+Quantity: ${takeQty}x
+Total Price: Rp ${totalPrice}
+
+🎟️ Redeem Code:
+👉 ${codeLines}
+
+How to Redeem:
+1️⃣ Open the Redfinger app
+2️⃣ Log in to your account
+3️⃣ Go to Profile → Prepaid Redemption Code
+4️⃣ Enter the code above
+5️⃣ VIP akan diaktifkan otomatis selama ${duration}
+
+⚠️ Each code can only be used for one account
+💬 No refund unless it’s our mistake.
+
+✨ Thank you for ordering from Arriab Store!`;
+
+    // Kurangi kode yang diambil dari list
+    takenCodes.forEach(tc=>{
+        let idx = codes.findIndex(c=>c.code===tc.code && c.type===tc.type);
+        if(idx>=0){
+            codes[idx].quantity -=1;
+            if(codes[idx].quantity<=0){ codes.splice(idx,1); }
         }
-    </script>
+    });
+
+    localStorage.setItem('codes', JSON.stringify(codes));
+    displayCodes();
+}
+
+displayCodes();
+</script>
 </body>
-</html>
+  </html>
