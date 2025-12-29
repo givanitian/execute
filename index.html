@@ -1,143 +1,329 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Kode Redeem Manager</title>
-<style>
-body { font-family: Arial; background: #f5f5f5; display: flex; justify-content: center; padding: 50px 20px;}
-.container { background: #fff; padding: 25px; border-radius: 10px; width: 100%; max-width: 650px; box-shadow: 0 5px 15px rgba(0,0,0,0.1);}
-select, textarea, input, button { padding: 10px; width: 100%; margin: 5px 0; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box; font-size: 14px;}
-textarea { height: 100px; resize: vertical;}
-button { cursor: pointer; background: #4CAF50; color: white; border: none;}
-button:hover { background: #45a049;}
-#stock, #codeList, #output { margin-top: 15px; padding: 15px; background: #eee; border-radius: 5px; white-space: pre-line; min-height: 50px;}
-.codeItem { padding: 8px; background: #d9f9d9; margin-bottom: 5px; border-radius: 5px;}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WAR LINK - Berebut Link Lomba</title>
+    <style>
+        /* Reset dan Font */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: #fff;
+        }
+
+        /* Glassmorphism Container */
+        .glass {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        /* Judul */
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Countdown */
+        #countdown {
+            font-size: 3rem;
+            font-weight: bold;
+            margin: 20px 0;
+            color: #ffd700;
+        }
+
+        /* Tombol */
+        button {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: #fff;
+            padding: 12px 24px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin: 10px;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+        }
+
+        button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.05);
+        }
+
+        button:disabled {
+            background: rgba(128, 128, 128, 0.5);
+            cursor: not-allowed;
+        }
+
+        /* Input dan List */
+        input, select {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            font-size: 1rem;
+        }
+
+        input::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        li {
+            background: rgba(255, 255, 255, 0.1);
+            margin: 5px 0;
+            padding: 10px;
+            border-radius: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        li button {
+            background: rgba(255, 0, 0, 0.5);
+            padding: 5px 10px;
+            font-size: 0.8rem;
+        }
+
+        /* Responsif */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+            #countdown {
+                font-size: 2rem;
+            }
+            .glass {
+                padding: 20px;
+            }
+        }
+
+        /* Hidden Admin */
+        #admin-panel {
+            display: none;
+        }
+    </style>
 </head>
 <body>
-<div class="container">
-<h2>Kode Redeem Manager</h2>
-<select id="typeSelect">
-<option value="7D">7 Day</option>
-<option value="30D">30 Day</option>
-</select>
-<textarea id="codeInput" placeholder="Masukkan kode redeem, satu kode per baris"></textarea>
-<input type="number" id="quantityInput" placeholder="Quantity saat tambah kode" value="1" min="1">
-<button onclick="addCode()">Tambah Kode</button>
+    <div class="glass">
+        <h1 id="event-title">Lomba WAR LINK</h1>
+        <div id="countdown">00:00:00</div>
+        <button id="war-link-btn" disabled>WAR LINK</button>
+        <p id="status">Menunggu start dari developer...</p>
+        <button id="admin-btn">Admin Panel</button>
+    </div>
 
-<h3>Ambil Kode:</h3>
-<input type="number" id="redeemQty" placeholder="Berapa kode yang ingin diambil?" value="1" min="1">
-<button onclick="redeemMultiple()">Ambil Kode</button>
+    <!-- Admin Panel (Hidden) -->
+    <div class="glass" id="admin-panel">
+        <h2>Panel Admin</h2>
+        <label>Nama Jenis Lomba:</label>
+        <input type="text" id="event-name" placeholder="Masukkan nama lomba">
+        <label>Durasi Countdown (menit):</label>
+        <input type="number" id="countdown-duration" placeholder="10" min="1">
+        <button id="set-countdown">Set Countdown</button>
+        <button id="start-btn">Start WAR LINK</button>
+        <button id="stop-btn">Stop WAR LINK</button>
+        <label>Tambah Link:</label>
+        <input type="text" id="new-link" placeholder="Masukkan link baru">
+        <button id="add-link">Tambah Link</button>
+        <ul id="link-list"></ul>
+    </div>
 
-<h3>Stok Kode Redeem:</h3>
-<div id="stock"></div>
+    <script>
+        // Elemen DOM
+        const eventTitle = document.getElementById('event-title');
+        const countdownEl = document.getElementById('countdown');
+        const warLinkBtn = document.getElementById('war-link-btn');
+        const statusEl = document.getElementById('status');
+        const adminBtn = document.getElementById('admin-btn');
+        const adminPanel = document.getElementById('admin-panel');
+        const eventNameInput = document.getElementById('event-name');
+        const countdownDurationInput = document.getElementById('countdown-duration');
+        const setCountdownBtn = document.getElementById('set-countdown');
+        const startBtn = document.getElementById('start-btn');
+        const stopBtn = document.getElementById('stop-btn');
+        const newLinkInput = document.getElementById('new-link');
+        const addLinkBtn = document.getElementById('add-link');
+        const linkList = document.getElementById('link-list');
 
-<h3>Daftar Kode Redeem:</h3>
-<div id="codeList"></div>
+        // Data dari localStorage
+        let links = JSON.parse(localStorage.getItem('links')) || [];
+        let eventName = localStorage.getItem('eventName') || 'Lomba WAR LINK';
+        let countdownTime = parseInt(localStorage.getItem('countdownTime')) || 0;
+        let isStarted = localStorage.getItem('isStarted') === 'true';
+        let isStopped = localStorage.getItem('isStopped') === 'true';
+        let interval;
 
-<h3>Output:</h3>
-<div id="output"></div>
-</div>
+        // Update UI
+        function updateUI() {
+            eventTitle.textContent = eventName;
+            eventNameInput.value = eventName;
+            renderLinks();
+            if (isStopped) {
+                statusEl.textContent = 'Link sudah full! Sesi dihentikan.';
+                warLinkBtn.disabled = true;
+                countdownEl.textContent = '00:00:00';
+            } else if (isStarted) {
+                statusEl.textContent = 'Sesi WAR LINK sedang berlangsung!';
+                warLinkBtn.disabled = false;
+                countdownEl.textContent = 'MULAI!';
+            } else if (countdownTime > 0) {
+                statusEl.textContent = 'Countdown dimulai...';
+                warLinkBtn.disabled = true;
+                startCountdown();
+            } else {
+                statusEl.textContent = 'Menunggu start dari developer...';
+                warLinkBtn.disabled = true;
+                countdownEl.textContent = '00:00:00';
+            }
+        }
 
-<script>
-let codes = JSON.parse(localStorage.getItem('codes')) || [];
-const stockDiv = document.getElementById('stock');
-const codeListDiv = document.getElementById('codeList');
-const outputDiv = document.getElementById('output');
-
-function updateStock() {
-    let stock7D = codes.filter(c => c.type === '7D').reduce((acc, c) => acc + c.quantity, 0);
-    let stock30D = codes.filter(c => c.type === '30D').reduce((acc, c) => acc + c.quantity, 0);
-    stockDiv.textContent = `7 Day Stock: ${stock7D} | 30 Day Stock: ${stock30D}`;
-}
-
-function displayCodes() {
-    updateStock();
-    codeListDiv.innerHTML = '';
-    codes.forEach(item => {
-        const div = document.createElement('div');
-        div.className = 'codeItem';
-        div.textContent = `${item.type}: ${item.code} (Quantity: ${item.quantity})`;
-        codeListDiv.appendChild(div);
-    });
-}
-
-function addCode() {
-    const type = document.getElementById('typeSelect').value;
-    const input = document.getElementById('codeInput').value.trim();
-    const quantity = parseInt(document.getElementById('quantityInput').value) || 1;
-    if(input){
-        const lines = input.split(/\r?\n/);
-        lines.forEach(line => {
-            const code = line.trim();
-            if(code){
-                const existing = codes.find(c => c.code === code && c.type === type);
-                if(existing){
-                    existing.quantity += quantity;
-                } else {
-                    codes.push({type: type, code: code, quantity: quantity});
+        // Countdown Timer
+        function startCountdown() {
+            clearInterval(interval);
+            interval = setInterval(() => {
+                if (countdownTime <= 0) {
+                    clearInterval(interval);
+                    isStarted = true;
+                    localStorage.setItem('isStarted', 'true');
+                    updateUI();
+                    return;
                 }
+                countdownTime--;
+                localStorage.setItem('countdownTime', countdownTime);
+                const minutes = Math.floor(countdownTime / 60);
+                const seconds = countdownTime % 60;
+                countdownEl.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}:00`;
+            }, 1000);
+        }
+
+        // Render Links
+        function renderLinks() {
+            linkList.innerHTML = '';
+            links.forEach((link, index) => {
+                const li = document.createElement('li');
+                li.innerHTML = `<span>${link}</span><button onclick="removeLink(${index})">Hapus</button>`;
+                linkList.appendChild(li);
+            });
+        }
+
+        // Admin Access
+        adminBtn.addEventListener('click', () => {
+            const password = prompt('Masukkan password admin:');
+            if (password === 'admin123') {
+                adminPanel.style.display = 'block';
+            } else {
+                alert('Password salah!');
             }
         });
-        localStorage.setItem('codes', JSON.stringify(codes));
-        document.getElementById('codeInput').value = '';
-        document.getElementById('quantityInput').value = '1';
-        displayCodes();
-    }
-}
 
-function redeemMultiple(){
-    let takeQty = parseInt(document.getElementById('redeemQty').value) || 1;
-    let flatCodes = [];
-    codes.forEach(c => { for(let i=0;i<c.quantity;i++){ flatCodes.push({...c}); }});
-    if(takeQty > flatCodes.length){
-        alert(`Jumlah yang diminta lebih besar dari stok! Stok tersedia: ${flatCodes.length}`);
-        return;
-    }
+        // Set Event Name
+        eventNameInput.addEventListener('change', () => {
+            eventName = eventNameInput.value;
+            localStorage.setItem('eventName', eventName);
+            updateUI();
+        });
 
-    let takenCodes = flatCodes.slice(0, takeQty);
-    let firstType = takenCodes[0].type;
-    let unitPrice = firstType === '7D' ? 21000 : 61000;
-    let totalPrice = (unitPrice * takeQty).toLocaleString('id');
-    let duration = firstType === '7D' ? '7 days 🚀' : '30 days 🚀';
+        // Set Countdown
+        setCountdownBtn.addEventListener('click', () => {
+            const duration = parseInt(countdownDurationInput.value);
+            if (duration > 0) {
+                countdownTime = duration * 60;
+                localStorage.setItem('countdownTime', countdownTime);
+                isStarted = false;
+                isStopped = false;
+                localStorage.setItem('isStarted', 'false');
+                localStorage.setItem('isStopped', 'false');
+                updateUI();
+            }
+        });
 
-    let codeLines = takenCodes.map(c=>c.code).join('\n      ');
+        // Start
+        startBtn.addEventListener('click', () => {
+            if (countdownTime > 0) {
+                startCountdown();
+            } else {
+                isStarted = true;
+                localStorage.setItem('isStarted', 'true');
+                updateUI();
+            }
+        });
 
-    outputDiv.textContent = `🎁 Your Order Has Been Processed!
-Product: VIP - Redeem Code ${firstType} (Redfinger)
-Quantity: ${takeQty}x
-Total Price: Rp ${totalPrice}
+        // Stop
+        stopBtn.addEventListener('click', () => {
+            isStopped = true;
+            localStorage.setItem('isStopped', 'true');
+            clearInterval(interval);
+            updateUI();
+        });
 
-🎟️ Redeem Code:
-👉 ${codeLines}
+        // Add Link
+        addLinkBtn.addEventListener('click', () => {
+            const link = newLinkInput.value.trim();
+            if (link) {
+                links.push(link);
+                localStorage.setItem('links', JSON.stringify(links));
+                newLinkInput.value = '';
+                renderLinks();
+            }
+        });
 
-How to Redeem:
-1️⃣ Open the Redfinger app
-2️⃣ Log in to your account
-3️⃣ Go to Profile → Prepaid Redemption Code
-4️⃣ Enter the code above
-5️⃣ VIP akan diaktifkan otomatis selama ${duration}
-
-⚠️ Each code can only be used for one account
-💬 No refund unless it’s our mistake.
-
-✨ Thank you for ordering from Arriab Store!`;
-
-    // Kurangi kode yang diambil dari list
-    takenCodes.forEach(tc=>{
-        let idx = codes.findIndex(c=>c.code===tc.code && c.type===tc.type);
-        if(idx>=0){
-            codes[idx].quantity -=1;
-            if(codes[idx].quantity<=0){ codes.splice(idx,1); }
+        // Remove Link
+        function removeLink(index) {
+            links.splice(index, 1);
+            localStorage.setItem('links', JSON.stringify(links));
+            renderLinks();
         }
-    });
 
-    localStorage.setItem('codes', JSON.stringify(codes));
-    displayCodes();
-}
+        // WAR LINK Button
+        warLinkBtn.addEventListener('click', () => {
+            if (links.length > 0 && !isStopped) {
+                const randomIndex = Math.floor(Math.random() * links.length);
+                const wonLink = links.splice(randomIndex, 1)[0];
+                localStorage.setItem('links', JSON.stringify(links));
+                alert(`Selamat! Anda mendapatkan link: ${wonLink}`);
+                renderLinks();
+                if (links.length === 0) {
+                    isStopped = true;
+                    localStorage.setItem('isStopped', 'true');
+                    updateUI();
+                }
+            } else {
+                alert('Tidak ada link tersedia atau sesi sudah berhenti.');
+            }
+        });
 
-displayCodes();
-</script>
+        // Init
+        updateUI();
+    </script>
 </body>
-  </html>
+</html>
