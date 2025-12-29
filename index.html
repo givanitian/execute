@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WAR LINK - Berebut Link Lomba</title>
     <style>
-        /* Reset dan Font */
+        /* Sama seperti sebelumnya */
         * {
             margin: 0;
             padding: 0;
@@ -24,7 +24,6 @@
             color: #fff;
         }
 
-        /* Glassmorphism Container */
         .glass {
             background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(10px);
@@ -38,14 +37,12 @@
             margin-bottom: 20px;
         }
 
-        /* Judul */
         h1 {
             font-size: 2.5rem;
             margin-bottom: 20px;
             text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
         }
 
-        /* Countdown */
         #countdown {
             font-size: 3rem;
             font-weight: bold;
@@ -53,7 +50,6 @@
             color: #ffd700;
         }
 
-        /* Tombol */
         button {
             background: rgba(255, 255, 255, 0.2);
             border: 1px solid rgba(255, 255, 255, 0.3);
@@ -77,7 +73,6 @@
             cursor: not-allowed;
         }
 
-        /* Input dan List */
         input, select {
             width: 100%;
             padding: 10px;
@@ -114,7 +109,6 @@
             font-size: 0.8rem;
         }
 
-        /* Responsif */
         @media (max-width: 768px) {
             h1 {
                 font-size: 2rem;
@@ -127,7 +121,6 @@
             }
         }
 
-        /* Hidden Admin */
         #admin-panel {
             display: none;
         }
@@ -142,7 +135,6 @@
         <button id="admin-btn">Admin Panel</button>
     </div>
 
-    <!-- Admin Panel (Hidden) -->
     <div class="glass" id="admin-panel">
         <h2>Panel Admin</h2>
         <label>Nama Jenis Lomba:</label>
@@ -159,6 +151,12 @@
     </div>
 
     <script>
+        // Konfigurasi JSONBin (ganti dengan data Anda)
+        const BIN_ID = '69525d01ae596e708fb7cc3e';  // Misalnya: '5f9b5c0b5d4b4c001f3b4b5c'
+        const API_KEY = '$2a$10$Hnx8tdI5Kq0oJ2K.GXCodeZMwA.hL3eLAR2c1KoiVxH1d0q.iW1Jq';  // Master Key dari akun Anda
+        const BIN_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
+        const UPDATE_URL = `${BIN_URL}/latest`;  // Untuk update
+
         // Elemen DOM
         const eventTitle = document.getElementById('event-title');
         const countdownEl = document.getElementById('countdown');
@@ -175,28 +173,67 @@
         const addLinkBtn = document.getElementById('add-link');
         const linkList = document.getElementById('link-list');
 
-        // Data dari localStorage
-        let links = JSON.parse(localStorage.getItem('links')) || [];
-        let eventName = localStorage.getItem('eventName') || 'Lomba WAR LINK';
-        let countdownTime = parseInt(localStorage.getItem('countdownTime')) || 0;
-        let isStarted = localStorage.getItem('isStarted') === 'true';
-        let isStopped = localStorage.getItem('isStopped') === 'true';
+        // Data lokal (akan di-sync dari JSONBin)
+        let eventData = { name: 'Lomba WAR LINK', countdownTime: 0, isStarted: false, isStopped: false };
+        let links = [];
         let interval;
+
+        // Fungsi untuk fetch data dari JSONBin (polling setiap 1 detik)
+        async function fetchData() {
+            try {
+                const response = await fetch(BIN_URL, {
+                    headers: { 'X-Master-Key': API_KEY }
+                });
+                const data = await response.json();
+                eventData = data.record || eventData;
+                links = eventData.links || [];
+                updateUI();
+            } catch (error) {
+                console.error('Error fetching data:', error);
+            }
+        }
+
+        // Fungsi untuk update data ke JSONBin
+        async function updateData(newData) {
+            try {
+                const response = await fetch(UPDATE_URL, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Master-Key': API_KEY
+                    },
+                    body: JSON.stringify({ ...eventData, ...newData })
+                });
+                if (response.ok) {
+                    fetchData();  // Refresh data setelah update
+                } else {
+                    alert('Gagal update data!');
+                }
+            } catch (error) {
+                console.error('Error updating data:', error);
+            }
+        }
+
+        // Mulai polling
+        setInterval(fetchData, 1000);  // Fetch setiap 1 detik
+        fetchData();  // Fetch awal
 
         // Update UI
         function updateUI() {
-            eventTitle.textContent = eventName;
-            eventNameInput.value = eventName;
+            eventTitle.textContent = eventData.name;
+            eventNameInput.value = eventData.name;
             renderLinks();
-            if (isStopped) {
+            if (eventData.isStopped) {
                 statusEl.textContent = 'Link sudah full! Sesi dihentikan.';
                 warLinkBtn.disabled = true;
                 countdownEl.textContent = '00:00:00';
-            } else if (isStarted) {
+                clearInterval(interval);
+            } else if (eventData.isStarted) {
                 statusEl.textContent = 'Sesi WAR LINK sedang berlangsung!';
                 warLinkBtn.disabled = false;
                 countdownEl.textContent = 'MULAI!';
-            } else if (countdownTime > 0) {
+                clearInterval(interval);
+            } else if (eventData.countdownTime > 0) {
                 statusEl.textContent = 'Countdown dimulai...';
                 warLinkBtn.disabled = true;
                 startCountdown();
@@ -204,6 +241,7 @@
                 statusEl.textContent = 'Menunggu start dari developer...';
                 warLinkBtn.disabled = true;
                 countdownEl.textContent = '00:00:00';
+                clearInterval(interval);
             }
         }
 
@@ -211,17 +249,15 @@
         function startCountdown() {
             clearInterval(interval);
             interval = setInterval(() => {
-                if (countdownTime <= 0) {
+                if (eventData.countdownTime <= 0) {
                     clearInterval(interval);
-                    isStarted = true;
-                    localStorage.setItem('isStarted', 'true');
-                    updateUI();
+                    updateData({ isStarted: true, countdownTime: 0 });
                     return;
                 }
-                countdownTime--;
-                localStorage.setItem('countdownTime', countdownTime);
-                const minutes = Math.floor(countdownTime / 60);
-                const seconds = countdownTime % 60;
+                eventData.countdownTime--;
+                updateData({ countdownTime: eventData.countdownTime });
+                const minutes = Math.floor(eventData.countdownTime / 60);
+                const seconds = eventData.countdownTime % 60;
                 countdownEl.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}:00`;
             }, 1000);
         }
@@ -248,42 +284,29 @@
 
         // Set Event Name
         eventNameInput.addEventListener('change', () => {
-            eventName = eventNameInput.value;
-            localStorage.setItem('eventName', eventName);
-            updateUI();
+            updateData({ name: eventNameInput.value });
         });
 
         // Set Countdown
         setCountdownBtn.addEventListener('click', () => {
             const duration = parseInt(countdownDurationInput.value);
             if (duration > 0) {
-                countdownTime = duration * 60;
-                localStorage.setItem('countdownTime', countdownTime);
-                isStarted = false;
-                isStopped = false;
-                localStorage.setItem('isStarted', 'false');
-                localStorage.setItem('isStopped', 'false');
-                updateUI();
+                updateData({ countdownTime: duration * 60, isStarted: false, isStopped: false });
             }
         });
 
         // Start
         startBtn.addEventListener('click', () => {
-            if (countdownTime > 0) {
+            if (eventData.countdownTime > 0) {
                 startCountdown();
             } else {
-                isStarted = true;
-                localStorage.setItem('isStarted', 'true');
-                updateUI();
+                updateData({ isStarted: true });
             }
         });
 
         // Stop
         stopBtn.addEventListener('click', () => {
-            isStopped = true;
-            localStorage.setItem('isStopped', 'true');
-            clearInterval(interval);
-            updateUI();
+            updateData({ isStopped: true });
         });
 
         // Add Link
@@ -291,39 +314,31 @@
             const link = newLinkInput.value.trim();
             if (link) {
                 links.push(link);
-                localStorage.setItem('links', JSON.stringify(links));
+                updateData({ links });
                 newLinkInput.value = '';
-                renderLinks();
             }
         });
 
         // Remove Link
         function removeLink(index) {
             links.splice(index, 1);
-            localStorage.setItem('links', JSON.stringify(links));
-            renderLinks();
+            updateData({ links });
         }
 
         // WAR LINK Button
         warLinkBtn.addEventListener('click', () => {
-            if (links.length > 0 && !isStopped) {
+            if (links.length > 0 && !eventData.isStopped) {
                 const randomIndex = Math.floor(Math.random() * links.length);
                 const wonLink = links.splice(randomIndex, 1)[0];
-                localStorage.setItem('links', JSON.stringify(links));
+                updateData({ links });
                 alert(`Selamat! Anda mendapatkan link: ${wonLink}`);
-                renderLinks();
                 if (links.length === 0) {
-                    isStopped = true;
-                    localStorage.setItem('isStopped', 'true');
-                    updateUI();
+                    updateData({ isStopped: true });
                 }
             } else {
                 alert('Tidak ada link tersedia atau sesi sudah berhenti.');
             }
         });
-
-        // Init
-        updateUI();
     </script>
 </body>
 </html>
